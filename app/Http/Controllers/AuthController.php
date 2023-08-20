@@ -27,7 +27,7 @@ class AuthController extends Controller
             'lastname' => 'required|string',
             'age' => 'required|integer',
             'gender' => 'required|string',
-            'account_type'=> 'string',
+            'account_type'=> 'required|string',
             'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'phone' => 'required|unique:users',
             'email' => 'required|email|unique:users',
