@@ -38,7 +38,12 @@ class SMSAuthController extends Controller
             ]
         );
 
-        return response()->json(['message' => 'Verification code sent']);
+        // Generate and return a token after sending the verification code
+        $token = JWTAuth::fromUser($user);
+        $user->secret_key = $token;
+        $user->save();
+
+        return response()->json(['message' => 'Verification code sent', 'user_secret_key' => $token]);
     }
 
     public function verifyCode(Request $request)
@@ -59,7 +64,9 @@ class SMSAuthController extends Controller
 
         // Verification successful, generate and return a token
         $token = JWTAuth::fromUser($user);
-        DB::table('users')->where('id', $user->id)->update(['secret_key' => $token]);
+
+        $user->secret_key = $token;
+        $user->save();
 
         return response()->json(['user_secret_key' => $token]);
     }
