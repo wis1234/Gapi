@@ -59,8 +59,8 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 //google authentification
 
-Route::get('/oauth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
-Route::get('/oauth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
 
 //sms authentication
 
