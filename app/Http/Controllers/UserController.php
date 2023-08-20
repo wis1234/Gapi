@@ -23,11 +23,12 @@ class UserController extends Controller
             'lastname',
             'age',
             'gender',
-            'hobby',
+            'account_type',
             'phone',
             'photo',
             'email',
             'google_id',
+            'phone_code',
             'password',
         ]);
 
@@ -36,11 +37,12 @@ class UserController extends Controller
             'lastname' => 'required|string|max:255',
             'age' => 'required|numeric',
             'gender' => 'required|string|max:100',
-            'hobby' => 'nullable|string|max:255',
+            'account_type' => 'nullable|string|max:255',
             'phone' => 'required|string|max:20',
             'photo' => 'required|string|max:20',
             'email' => 'required|email|unique:users,email',
             'google_id' => 'string',
+            'phone_code' => 'string',
             'password' => 'required|string|min:8',
         ]);
 
@@ -76,11 +78,12 @@ class UserController extends Controller
             'lastname',
             'age',
             'gender',
-            'hobby',
+            'account_type',
             'phone',
             'photo',
             'email',
             'google_id',
+            'phone_code',
             'password',
         ]);
 
@@ -89,11 +92,12 @@ class UserController extends Controller
             'lastname' => 'required|string|max:255',
             'age' => 'required|numeric',
             'gender' => 'required|string|max:100',
-            'hobby' => 'nullable|string|max:255',
+            'account_type' => 'nullable|string|max:255',
             'phone' => 'required|string|max:20',
             'photo' => 'required|string|max:20',
             'email' => 'required|email|unique:users,email,' . $id,
             'google_id' => 'string',
+            'phone_code' => 'string',
             'password' => 'required|string|min:8',
         ]);
 

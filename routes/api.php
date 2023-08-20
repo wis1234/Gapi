@@ -24,6 +24,7 @@ use App\Http\Controllers\MenuPriceController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\DrinkController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\SMSAuthController;
 use App\Http\Controllers\VehiculeController;
 use App\Http\Controllers\TransportMeanController;
 use App\Http\Controllers\CateringServiceClientController;
@@ -58,8 +59,13 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 //google authentification
 
-// Route::get('/oauth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
-// Route::get('/oauth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+Route::get('/oauth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
+Route::get('/oauth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+
+//sms authentication
+
+Route::post('/send-verification-code', [SMSAuthController::class, 'sendVerificationCode']);
+Route::post('/verify-code', [SMSAuthController::class, 'verifyCode']);
 
 
 

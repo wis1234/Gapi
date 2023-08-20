@@ -27,6 +27,7 @@ class AuthController extends Controller
             'lastname' => 'required|string',
             'age' => 'required|integer',
             'gender' => 'required|string',
+            'account_type'=> 'string',
             'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'phone' => 'required|unique:users',
             'email' => 'required|email|unique:users',
@@ -44,6 +45,7 @@ class AuthController extends Controller
             'lastname' => $request->lastname,
             'age' => $request->age,
             'gender' => $request->gender,
+            'account_type' => $request->account_type,
             'photo' => $imagePath, // Store the path of the uploaded image
             'phone' => $request->phone,
             'email' => $request->email,
