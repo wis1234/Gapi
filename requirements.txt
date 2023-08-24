@@ -1,0 +1,7 @@
+reset security after use ngrok
+# Set-ExecutionPolicy Restricted
+
+
+make use of ngrok free subdomain after the default provided domain expires
+# ngrok authtoken YOUR_AUTH_TOKEN
+# ngrok http -subdomain=your-desired-subdomain 8000

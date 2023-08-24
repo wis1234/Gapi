@@ -26,7 +26,7 @@ class SMSAuthController extends Controller
         $user->save();
 
         $client = new Client(
-            env('TWILIO_SID'),           // Your Twilio Account SID from .env
+            env('TWILIO_SID'),          // Your Twilio Account SID from .env
             env('TWILIO_AUTH_TOKEN')     // Your Twilio Auth Token from .env
         );
 
