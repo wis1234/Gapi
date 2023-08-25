@@ -117,14 +117,18 @@ class UserController extends Controller
 
     public function destroy($id)
     {
-        $user = User::find($id);
-
-        if (!$user) {
-            return response()->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        try {
+            // Attempt to find the user by ID
+            $user = User::findOrFail($id);
+            
+            // Delete the user
+            $user->delete();
+    
+            // Return a success response
+            return response()->json(['message' => 'User deleted successfully'], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            // Handle exceptions (e.g., database connection issues, etc.)
+            return response()->json(['error' => 'An error occurred while deleting the user'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        $user->delete();
-
-        return response()->json(['message' => 'User deleted successfully'], Response::HTTP_OK);
     }
-}
+}    

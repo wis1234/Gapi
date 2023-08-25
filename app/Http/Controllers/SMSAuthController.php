@@ -26,8 +26,8 @@ class SMSAuthController extends Controller
         $user->save();
 
         $client = new Client(
-            env('TWILIO_SID'),          // Your Twilio Account SID from .env
-            env('TWILIO_AUTH_TOKEN')     // Your Twilio Auth Token from .env
+            env('TWILIO_SID'),         
+            env('TWILIO_AUTH_TOKEN')     
         );
 
         $message = $client->messages->create(
@@ -39,37 +39,38 @@ class SMSAuthController extends Controller
         );
 
         // Generate and return a token after sending the verification code
-        $token = JWTAuth::fromUser($user);
-        $user->secret_key = $token;
-        $user->save();
+        // $token = JWTAuth::fromUser($user);
+        // $user->secret_key = $token;
+        // $user->save();
 
-        return response()->json(['message' => 'Verification code sent', 'user_secret_key' => $token]);
+        // return response()->json(['message' => 'Verification code sent', 'user_secret_key' => $token]);
+        return response()->json(['message' => 'verification code sent sucessfully']);
     }
 
     public function verifyCode(Request $request)
     {
         $request->validate([
-            'phone' => 'required|numeric',
             'code' => 'required|numeric',
         ]);
-
-        $userPhoneNumber = $request->input('phone');
+    
         $userCode = $request->input('code');
-
-        $user = User::where('phone', $userPhoneNumber)->first();
-
-        if (!$user || $user->phone_code !== $userCode) {
+    
+        $user = User::where('phone_code', $userCode)->first();
+    
+        if (!$user) {
             return response()->json(['message' => 'Invalid verification code'], 401);
         }
-
+    
         // Verification successful, generate and return a token
         $token = JWTAuth::fromUser($user);
-
+    
+        // Update the user's secret key if needed
         $user->secret_key = $token;
         $user->save();
-
+    
         return response()->json(['user_secret_key' => $token]);
     }
+    
 
     /**
      * Generate a random verification code.
