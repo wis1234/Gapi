@@ -39,6 +39,8 @@ use App\Http\Controllers\CourierController;
 use App\Http\Controllers\CustomerDemandController;
 use App\Http\Controllers\BookTicketController;
 
+use App\Http\Controllers\CateringTotalController;
+
 
 
 /*
@@ -203,6 +205,14 @@ Route::post('/catering_services', [CateringServiceController::class, 'store']);
 Route::get('/catering_services/{id}', [CateringServiceController::class, 'show']);
 Route::put('/catering_services/{id}', [CateringServiceController::class, 'update']);
 Route::delete('/catering_services/{id}', [CateringServiceController::class, 'destroy']);
+
+
+// catering service sum calculation routing
+
+Route::get('/calculate-catering-totals', [CateringTotalController::class, 'calculateTotals']);
+
+
+
 
 //additional data in catering services controller
 
