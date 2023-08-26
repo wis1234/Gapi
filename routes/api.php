@@ -40,6 +40,7 @@ use App\Http\Controllers\CustomerDemandController;
 use App\Http\Controllers\BookTicketController;
 
 use App\Http\Controllers\CateringTotalController;
+use App\Http\Controllers\FilteredCateringServiceController;
 
 
 
@@ -221,6 +222,22 @@ Route::apiResource('appetizers', AppetizerController::class);
 Route::apiResource('main_dishes', MainDishController::class);
 Route::apiResource('desserts', DessertController::class);
 
+// Routes for CateringServiceClientController
+
+Route::post('/catering-service-clients/demand', [CateringServiceClientController::class, 'demand']);
+Route::apiResource('catering-service-clients', CateringServiceClientController::class);
+
+//routes to make suggestion to the customer
+Route::get('/filtered-catering-services', [CateringTotalController::class, 'tochoose']);
+Route::get('/choice', [CateringServiceClientController::class, 'filteredCateringServices']);
+
+//send way to make suggestion
+
+Route::post('/post-budget', [FilteredCateringServiceController::class, 'postBudget']);
+Route::get('/get-catering-services', [FilteredCateringServiceController::class, 'getCateringServices']);
+
+
+
 
 // Route::get('catering_services', [CateringServiceController::class, 'index'])->name('catering_services.index');
 // Route::get('catering_services/create', [CateringServiceController::class, 'create'])->name('catering_services.create');
@@ -306,12 +323,6 @@ Route::delete('/vehicule/{id}', [VehiculeController::class, 'destroy']);
 
 Route::resource('transport-means', TransportMeanController::class);
 
-
-
-// Routes for CateringServiceClientController
-
-Route::post('/catering-service-clients/demand', [CateringServiceClientController::class, 'demand']);
-Route::apiResource('catering-service-clients', CateringServiceClientController::class);
 
 //answer routing
 

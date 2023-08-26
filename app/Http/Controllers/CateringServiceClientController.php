@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\CateringServiceClient;
-use App\Models\Answer;
 use App\Models\User;
+use App\Models\Answer;
+use App\Models\CaterSum;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use App\Models\CateringService;
+use App\Models\CateringServiceClient;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\Response;
 
 class CateringServiceClientController extends Controller
 {
@@ -147,4 +149,47 @@ class CateringServiceClientController extends Controller
             $answer->updateSum();
         }
     }
+
+    //suggestion logic goes here
+
+
+    
+    // public function filteredCateringServices()
+    // {
+    //     $caterSumItems = CaterSum::all(); // Fetch all items from cater_sum table
+    //     $filteredCaterSumItems = [];
+    
+    //     foreach ($caterSumItems as $caterSumItem) {
+    //         $cateringServiceClient = CateringServiceClient::where('budget', '>=', $caterSumItem->total_cost)
+    //             ->first(); // Check if there's a matching catering service client
+    
+    //         if ($cateringServiceClient) {
+    //             $filteredCaterSumItems[] = $caterSumItem;
+    //         }
+    //     }
+    
+    //     return response()->json(['filtered_cater_sum_items' => $filteredCaterSumItems]);
+    // }
+
+    public function filteredCateringServices(Request $request, $budget)
+{
+    $caterSumItems = CaterSum::all(); // Fetch all items from cater_sum table
+    $filteredCaterSumItems = [];
+
+    foreach ($caterSumItems as $caterSumItem) {
+        if ($caterSumItem->total_cost <= $budget) {
+            $cateringServiceClient = CateringServiceClient::where('budget', '>=', $caterSumItem->total_cost)
+                ->first(); // Check if there's a matching catering service client
+
+            if ($cateringServiceClient) {
+                $filteredCaterSumItems[] = $caterSumItem;
+            }
+        }
+    }
+
+    return response()->json(['filtered_cater_sum_items' => $filteredCaterSumItems]);
+}
+    
+    
+
 }

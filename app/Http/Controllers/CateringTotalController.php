@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Aperitif;
-use App\Models\Appetizer;
-use App\Models\MainDish;
 use App\Models\Dessert;
+use App\Models\Aperitif;
 use App\Models\CaterSum;
+use App\Models\MainDish;
+use App\Models\Appetizer;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\CateringServiceClient;
 
 class CateringTotalController extends Controller
 {
@@ -39,4 +40,24 @@ class CateringTotalController extends Controller
 
         return response()->json(['message' => 'Catering totals calculated and updated.', 'totals' => $totals]);
     }
+
+
+
+
+    public function tochoose()
+{
+    $cateringServices = CateringServiceClient::with('user')->get(); // Fetch all catering services
+    $filteredCateringServices = [];
+
+    foreach ($cateringServices as $cateringService) {
+        $caterSum = CaterSum::where('catering_service_name', $cateringService->catering_service_name)->first();
+        
+        if ($caterSum && $cateringService->budget >= $caterSum->total_cost) {
+            $filteredCateringServices[] = $cateringService;
+        }
+    }
+
+    return response()->json(["Suggestion:" =>$filteredCateringServices]);
+}
+
 }
