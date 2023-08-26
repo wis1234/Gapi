@@ -14,11 +14,15 @@ class Appetizer extends Model
         'num_guest',
         'cost',
         'image1',
-        'image2',
-        'image3',
+
         'catering_service_name',
         'catering_service_id',
     ];
+
+    protected $casts = [
+        'image1' => 'array',
+    ];
+    
 
     public function cateringService()
     {

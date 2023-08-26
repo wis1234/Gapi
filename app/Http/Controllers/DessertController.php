@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 use App\Models\CateringService;
+use Illuminate\Support\Facades\Storage;
 
 class DessertController extends Controller
 {
@@ -29,9 +30,7 @@ class DessertController extends Controller
                 'description' => 'required|string',
                 'num_guest' => 'required|integer',
                 'cost' => 'required|numeric',
-                'image1' => 'nullable|string|max:255',
-                'image2' => 'nullable|string|max:255',
-                'image3' => 'nullable|string|max:255',
+                'image1.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Allow multiple images
                 'catering_service_code' => 'required|string|max:255',
             ]);
 
@@ -48,6 +47,17 @@ class DessertController extends Controller
             $dessertData = $request->except('catering_service_code');
             $dessertData['catering_service_id'] = $cateringService->id;
             $dessertData['catering_service_name'] = $cateringService->name;
+
+            // Handle image upload for multiple images
+            $imagePaths = [];
+            if ($request->hasFile('image1')) {
+                foreach ($request->file('image1') as $image) {
+                    $imagePath = $image->store('dessert_images', 'public');
+                    $imagePaths[] = $imagePath;
+                }
+            }
+
+            $dessertData['image1'] = $imagePaths;
 
             $dessert = Dessert::create($dessertData);
 
@@ -77,9 +87,7 @@ class DessertController extends Controller
                 'description' => 'required|string',
                 'num_guest' => 'required|integer',
                 'cost' => 'required|numeric',
-                'image1' => 'nullable|string|max:255',
-                'image2' => 'nullable|string|max:255',
-                'image3' => 'nullable|string|max:255',
+                'image1.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Allow multiple images
                 'catering_service_code' => 'required|string|max:255',
             ]);
 
@@ -97,7 +105,19 @@ class DessertController extends Controller
             $dessertData = $request->except('catering_service_code');
             $dessertData['catering_service_id'] = $cateringService->id;
             $dessertData['catering_service_name'] = $cateringService->name;
+
+            // Handle image upload for multiple images
+            $imagePaths = [];
+            if ($request->hasFile('image1')) {
+                foreach ($request->file('image1') as $image) {
+                    $imagePath = $image->store('dessert_images', 'public');
+                    $imagePaths[] = $imagePath;
+                }
+            }
+
             $dessert->update($dessertData);
+            $dessert->image1 = $imagePaths;
+            $dessert->save();
 
             return response()->json(['message' => 'Dessert updated successfully', 'data' => $dessert]);
         } catch (ModelNotFoundException $e) {
@@ -111,7 +131,16 @@ class DessertController extends Controller
     {
         try {
             $dessert = Dessert::findOrFail($id);
+
+            // Delete related images
+            if (is_array($dessert->image1)) {
+                foreach ($dessert->image1 as $imagePath) {
+                    Storage::disk('public')->delete($imagePath);
+                }
+            }
+
             $dessert->delete();
+
             return response()->json(['message' => 'Dessert deleted successfully']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Dessert not found'], Response::HTTP_NOT_FOUND);

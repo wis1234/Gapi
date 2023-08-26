@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Aperitif;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 use App\Models\CateringService;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class AperitifController extends Controller
 {
@@ -29,10 +30,8 @@ class AperitifController extends Controller
                 'description' => 'required|string',
                 'num_guest' => 'required|integer',
                 'cost' => 'required|numeric',
-                'image1' => 'nullable|string|max:255',
-                'image2' => 'nullable|string|max:255',
-                'image3' => 'nullable|string|max:255',
                 'catering_service_code' => 'required|string|exists:catering_services,catering_service_code',
+                'image1.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Allow multiple images
             ]);
 
             if ($validator->fails()) {
@@ -48,6 +47,17 @@ class AperitifController extends Controller
             $aperitifData = $request->all();
             $aperitifData['catering_service_id'] = $cateringService->id;
             $aperitifData['catering_service_name'] = $cateringService->name;
+
+            // Handle image upload
+            $imagePaths = [];
+            if ($request->hasFile('image1')) {
+                foreach ($request->file('image1') as $image) {
+                    $imagePath = $image->store('aperitif_images', 'public');
+                    $imagePaths[] = $imagePath;
+                }
+            }
+
+            $aperitifData['image1'] = $imagePaths;
 
             $aperitif = Aperitif::create($aperitifData);
 
@@ -83,10 +93,8 @@ class AperitifController extends Controller
                 'description' => 'required|string',
                 'num_guest' => 'required|integer',
                 'cost' => 'required|numeric',
-                'image1' => 'nullable|string|max:255',
-                'image2' => 'nullable|string|max:255',
-                'image3' => 'nullable|string|max:255',
                 'catering_service_code' => 'required|string|exists:catering_services,catering_service_code',
+                'image1.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Allow multiple images
             ]);
 
             if ($validator->fails()) {
@@ -116,23 +124,24 @@ class AperitifController extends Controller
     {
         try {
             $aperitif = Aperitif::find($id);
-
+    
             if (!$aperitif) {
                 return response()->json(['error' => 'Aperitif not found'], Response::HTTP_NOT_FOUND);
             }
-
+    
+            // Delete related images
+            if (is_array($aperitif->image1)) {
+                foreach ($aperitif->image1 as $imagePath) {
+                    Storage::disk('public')->delete($imagePath);
+                }
+            }
+    
             $aperitif->delete();
-
+    
             return response()->json(['message' => 'Aperitif deleted successfully']);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
     }
-
-    protected function handleException(\Exception $e)
-    {
-        // Log the exception here if needed
-
-        return response()->json(['error' => 'Something went wrong'], Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
+    
 }

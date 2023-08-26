@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Appetizer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 use App\Models\CateringService;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class AppetizerController extends Controller
 {
@@ -29,9 +30,7 @@ class AppetizerController extends Controller
                 'description' => 'required|string',
                 'num_guest' => 'required|integer',
                 'cost' => 'required|numeric',
-                'image1' => 'nullable|string|max:255',
-                'image2' => 'nullable|string|max:255',
-                'image3' => 'nullable|string|max:255',
+                'image1.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Allow multiple images
                 'catering_service_code' => 'required|string|exists:catering_services,catering_service_code',
             ]);
 
@@ -48,6 +47,17 @@ class AppetizerController extends Controller
             $appetizerData = $request->all();
             $appetizerData['catering_service_id'] = $cateringService->id;
             $appetizerData['catering_service_name'] = $cateringService->name;
+
+            // Handle image upload for multiple images
+            $imagePaths = [];
+            if ($request->hasFile('image1')) {
+                foreach ($request->file('image1') as $image) {
+                    $imagePath = $image->store('appetizer_images', 'public');
+                    $imagePaths[] = $imagePath;
+                }
+            }
+
+            $appetizerData['image1'] = $imagePaths;
 
             $appetizer = Appetizer::create($appetizerData);
 
@@ -83,9 +93,7 @@ class AppetizerController extends Controller
                 'description' => 'required|string',
                 'num_guest' => 'required|integer',
                 'cost' => 'required|numeric',
-                'image1' => 'nullable|string|max:255',
-                'image2' => 'nullable|string|max:255',
-                'image3' => 'nullable|string|max:255',
+                'image1.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Allow multiple images
                 'catering_service_code' => 'required|string|exists:catering_services,catering_service_code',
             ]);
 
@@ -102,6 +110,17 @@ class AppetizerController extends Controller
             $appetizer->update($request->all());
             $appetizer->catering_service_id = $cateringService->id;
             $appetizer->catering_service_name = $cateringService->name;
+
+            // Handle image upload for multiple images
+            $imagePaths = [];
+            if ($request->hasFile('image1')) {
+                foreach ($request->file('image1') as $image) {
+                    $imagePath = $image->store('appetizer_images', 'public');
+                    $imagePaths[] = $imagePath;
+                }
+            }
+
+            $appetizer->image1 = $imagePaths;
             $appetizer->save();
 
             return response()->json(['message' => 'Appetizer updated successfully', 'data' => $appetizer]);
@@ -119,6 +138,13 @@ class AppetizerController extends Controller
 
             if (!$appetizer) {
                 return response()->json(['error' => 'Appetizer not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            // Delete related images
+            if (is_array($appetizer->image1)) {
+                foreach ($appetizer->image1 as $imagePath) {
+                    Storage::disk('public')->delete($imagePath);
+                }
             }
 
             $appetizer->delete();

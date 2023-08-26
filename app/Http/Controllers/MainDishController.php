@@ -8,6 +8,7 @@ use App\Models\CateringService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 class MainDishController extends Controller
 {
@@ -29,9 +30,7 @@ class MainDishController extends Controller
                 'description' => 'required|string',
                 'num_guest' => 'required|integer',
                 'cost' => 'required|numeric',
-                'image1' => 'nullable|string|max:255',
-                'image2' => 'nullable|string|max:255',
-                'image3' => 'nullable|string|max:255',
+                'image1.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Allow multiple images
                 'catering_service_code' => 'required|string|max:255',
             ]);
 
@@ -48,6 +47,17 @@ class MainDishController extends Controller
             $mainDishData = $request->except('catering_service_code');
             $mainDishData['catering_service_id'] = $cateringService->id;
             $mainDishData['catering_service_name'] = $cateringService->name;
+
+            // Handle image upload for multiple images
+            $imagePaths = [];
+            if ($request->hasFile('image1')) {
+                foreach ($request->file('image1') as $image) {
+                    $imagePath = $image->store('main_dish_images', 'public');
+                    $imagePaths[] = $imagePath;
+                }
+            }
+
+            $mainDishData['image1'] = $imagePaths;
 
             $mainDish = MainDish::create($mainDishData);
 
@@ -77,9 +87,7 @@ class MainDishController extends Controller
                 'description' => 'required|string',
                 'num_guest' => 'required|integer',
                 'cost' => 'required|numeric',
-                'image1' => 'nullable|string|max:255',
-                'image2' => 'nullable|string|max:255',
-                'image3' => 'nullable|string|max:255',
+                'image1.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Allow multiple images
                 'catering_service_code' => 'required|string|max:255',
             ]);
 
@@ -97,7 +105,19 @@ class MainDishController extends Controller
             $mainDishData = $request->except('catering_service_code');
             $mainDishData['catering_service_id'] = $cateringService->id;
             $mainDishData['catering_service_name'] = $cateringService->name;
+
+            // Handle image upload for multiple images
+            $imagePaths = [];
+            if ($request->hasFile('image1')) {
+                foreach ($request->file('image1') as $image) {
+                    $imagePath = $image->store('main_dish_images', 'public');
+                    $imagePaths[] = $imagePath;
+                }
+            }
+
             $mainDish->update($mainDishData);
+            $mainDish->image1 = $imagePaths;
+            $mainDish->save();
 
             return response()->json(['message' => 'Main dish updated successfully', 'data' => $mainDish]);
         } catch (ModelNotFoundException $e) {
@@ -111,7 +131,16 @@ class MainDishController extends Controller
     {
         try {
             $mainDish = MainDish::findOrFail($id);
+            
+            // Delete related images
+            if (is_array($mainDish->image1)) {
+                foreach ($mainDish->image1 as $imagePath) {
+                    Storage::disk('public')->delete($imagePath);
+                }
+            }
+
             $mainDish->delete();
+
             return response()->json(['message' => 'Main dish deleted successfully']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Main dish not found'], Response::HTTP_NOT_FOUND);
