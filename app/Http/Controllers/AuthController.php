@@ -28,52 +28,75 @@ class AuthController extends Controller
             'age' => 'required|integer',
             'gender' => 'required|string',
             'account_type'=> 'required|string',
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'phone' => 'required|unique:users',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:8',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 400);
         }
-
-        $imagePath = $request->file('photo')->store('uploads/profiles', 'public'); // Store the uploaded image
-
+    
+        $imagePath = null; // Initialize the image path variable as null
+    
+        // Check if a photo was uploaded in the request
+        if ($request->hasFile('photo')) {
+            $imagePath = $request->file('photo')->store('uploads/profiles', 'public'); // Store the uploaded image
+        }
+    
         $user = User::create([
             'firstname' => $request->firstname,
             'lastname' => $request->lastname,
             'age' => $request->age,
             'gender' => $request->gender,
             'account_type' => $request->account_type,
-            'photo' => $imagePath, // Store the path of the uploaded image
+            'photo' => $imagePath, // Store the path of the uploaded image (could be null)
             'phone' => $request->phone,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
-
+    
         return response()->json(['message' => 'User registered successfully', 'user' => $user]);
     }
+    
+
+    // public function login(Request $request)
+    // {
+    //     $credentials = $request->only('email', 'password');
+
+    //     try {
+    //         if (!$token = JWTAuth::attempt($credentials)) {
+    //             return response()->json(['message' => 'Invalid credentials'], 401);
+    //         }
+    //     } catch (TokenExpiredException $e) {
+    //         // Token has expired, refresh it
+    //         $token = JWTAuth::refresh();
+    //     }
+
+    //     // Update the token in the database
+    //     $user = auth()->user();
+    //     DB::table('users')->where('id', $user->id)->update(['secret_key' => $token]);
+
+    //     return response()->json(['user_secret_key' => $token]);
+    // }
 
     public function login(Request $request)
-    {
-        $credentials = $request->only('email', 'password');
+{
+    $credentials = $request->only('email', 'password');
 
-        try {
-            if (!$token = JWTAuth::attempt($credentials)) {
-                return response()->json(['message' => 'Invalid credentials'], 401);
-            }
-        } catch (TokenExpiredException $e) {
-            // Token has expired, refresh it
-            $token = JWTAuth::refresh();
-        }
+    if (!$token = JWTAuth::attempt($credentials)) {
+        return response()->json(['error' => 'Invalid credentials'], 401);
+    }
 
-        // Update the token in the database
+
+    // Update the token in the database
         $user = auth()->user();
         DB::table('users')->where('id', $user->id)->update(['secret_key' => $token]);
 
         return response()->json(['user_secret_key' => $token]);
-    }
+}
+
 
     public function logout()
     {
