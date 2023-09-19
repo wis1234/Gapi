@@ -10,14 +10,17 @@ class CreateHotelsTable extends Migration
     {
         Schema::create('hotels', function (Blueprint $table) {
             $table->id();
-             $table->string('state');  
-            $table->integer('num_roomavail');
+            $table->unsignedBigInteger('user_id')->nullable();
+             $table->string('state')->nullable();  
+            $table->integer('num_roomavail')->nullable();
             $table->string('room_type');
+            $table->string('hotel_name');
+            $table->string('hotel_address');
             $table->string('room_price');
             $table->string('description');
-            // $table->string('phone');
+            
             // $table->string('email');
-            // $table->string('password');
+            $table->string('image_path')->nullable();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->rememberToken();
 

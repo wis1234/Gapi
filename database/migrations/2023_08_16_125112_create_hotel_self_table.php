@@ -17,9 +17,11 @@ class CreateHotelSelfTable extends Migration
             $table->string('manager_lastname');
             $table->string('manager_phone');
             $table->string('manager_email');
-            // $table->string('image');
+            $table->string('hotel_self_images');
             $table->string('hotel_code')->unique();
             $table->string('website')->nullable();
+            $table->unsignedBigInteger('hotel_id')->nullable(); // Make it nullable
+            $table->foreign('hotel_id')->references('id')->on('hotels')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });

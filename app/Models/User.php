@@ -140,6 +140,20 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(BookTicket::class, 'owner_email', 'email');
     }
 
+
+
+    // ppic handling and storing
+    public function getProfileImageUrlAttribute()
+{
+    if ($this->photo) {
+        return asset("storage/uploads/profiles/{$this->photo}");
+    }
+
+    // Retourner une URL par défaut ou vide si l'utilisateur n'a pas de photo de profil
+    return asset("path_vers_votre_image_par_defaut.jpg");
+}
+
+
 }
 
 

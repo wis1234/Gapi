@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('phone')->unique();
             $table->string('photo')->nullable();
             $table->string('email')->unique();
+            $table->string('account_type')->unique();
             $table->string('google_id')->nullable();
             $table->string('phone_code')->nullable();
             $table->text('secret_key')->nullable();

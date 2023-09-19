@@ -12,8 +12,8 @@ class HotelSelf extends Model
     protected $table = 'hotel_self';
 
     protected $fillable = [
-        'name', 'address', 'city', 'manager_firstname', 'manager_lastname', 'manager_phone',
-        'manager_email', 'hotel_code', 'website', 'user_id'
+        'name', 'address', 'city', 'manager_firstname', 'manager_lastname', 'manager_phone', 'hotel_self_images', 'low_price',
+        'manager_email', 'hotel_code','hotel_name', 'website', 'user_id'
     ];
 
     // Define the relationship with the User model (belongs to a User)
@@ -27,4 +27,16 @@ class HotelSelf extends Model
         {
             return $this->hasMany(HotelImage::class);
         }
+
+
+        // hidden items does here
+// protected $hidden = ['created_at', 'updated_at','low_price'];
+
+
+    // Define the inverse of the relationship: each HotelSelf belongs to a Hotel
+    public function hotel()
+    {
+        return $this->belongsTo(Hotel::class);
+    }
+
 }

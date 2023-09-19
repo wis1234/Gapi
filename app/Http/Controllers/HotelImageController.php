@@ -20,6 +20,8 @@ class HotelImageController extends Controller
         }
     }
 
+
+
     public function store(Request $request)
     {
         try {
@@ -27,28 +29,30 @@ class HotelImageController extends Controller
                 'hotel_id' => 'required|exists:hotel_self,id',
                 'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
-
+    
             if ($validator->fails()) {
                 return response()->json(['error' => $validator->errors()], Response::HTTP_BAD_REQUEST);
             }
-
+    
             $imagePath = $request->file('image')->store('hotel_images', 'public');
-
+    
             $hotel = Hotel::findOrFail($request->input('hotel_id'));
-
+    
             $imageData = [
                 'hotel_id' => $request->input('hotel_id'),
                 'hotel_name' => $hotel->name,
                 'image_path' => $imagePath,
             ];
-
+    
             $image = HotelImage::create($imageData);
-
+    
             return response()->json(['message' => 'Image uploaded successfully.', 'data' => $image], Response::HTTP_CREATED);
         } catch (\Exception $e) {
             return response()->json(['error' => 'An error occurred while uploading the image.'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+    
+
 
     public function show($id)
     {

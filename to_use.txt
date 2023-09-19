@@ -1,0 +1,2 @@
+ngrok cmd:ngrok http --domain=honeybee-right-shortly.ngrok-free.app  8000
+ngrok free static domain:https://honeybee-right-shortly.ngrok-free.app
