@@ -21,11 +21,19 @@ class HotelSelfController extends Controller
     {
         try {
             $hotels = HotelSelf::all();
+    
+            // Calculate the lowest room price from the hotels table
+            foreach ($hotels as $hotel) {
+                $lowestPrice = Hotel::where('hotel_name', $hotel->name)->min('room_price');
+                $hotel->low_price = $lowestPrice;
+            }
+    
             return response()->json($hotels);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
     }
+    
 
 
     public function store(Request $request)
@@ -35,8 +43,8 @@ class HotelSelfController extends Controller
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:255',
             'city' => 'required|string|max:255',
-            'website' => 'required|string|max:255',
-            'hotel_self_images' => 'required|image|mimes:jpeg,png,jpg|max:2048', // Adjust the image validation rules as needed
+            'website' => 'string|max:255',
+            'hotel_self_images' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
     
         if ($validator->fails()) {
@@ -49,7 +57,7 @@ class HotelSelfController extends Controller
         $hotelCode = 'HOTEL_' . uniqid() . '_AFRILINK';
     
         // Handle image upload
-        $imagePath = null;
+        $imagePath = "uploads/hotels/1695147237_bg-01.jpg"; // initialize the default image path 
         if ($request->hasFile('hotel_self_images')) {
             $image = $request->file('hotel_self_images');
             $imageName = time() . '_' . $image->getClientOriginalName();
@@ -69,15 +77,12 @@ class HotelSelfController extends Controller
         // Create the hotel_self record
         $hotel = HotelSelf::create($hotelData);
     
-        // Calculate the lowest room price from the hotels table
-        $lowestPrice = Hotel::min('room_price');
+        // Calculate the lowest room price from the hotels table for this hotel
+        $lowestPrice = Hotel::where('hotel_name', $hotel->name)->min('room_price');
     
         // Update the low_price field in the hotel_self record
-        $hotelSelf = HotelSelf::where('hotel_id', $hotel->id)->first();
-        if ($hotelSelf) {
-            $hotelSelf->low_price = $lowestPrice;
-            $hotelSelf->save();
-        }
+        $hotel->low_price = $lowestPrice;
+        $hotel->save();
     
         // Create a response array with hotel data and lowest room price
         $response = [
@@ -141,16 +146,20 @@ class HotelSelfController extends Controller
 
 
 
+public function show($id)
+{
+    try {
+        $hotel = HotelSelf::findOrFail($id);
 
-    public function show($id)
-    {
-        try {
-            $hotel = HotelSelf::findOrFail($id);
-            return response()->json($hotel);
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+        // Calculate the lowest room price from the hotels table
+        $lowestPrice = Hotel::where('hotel_name', $hotel->name)->min('room_price');
+        $hotel->low_price = $lowestPrice;
+
+        return response()->json($hotel);
+    } catch (\Exception $e) {
+        return $this->handleException($e);
     }
+}
 
     public function update(Request $request, $id)
     {
@@ -161,9 +170,9 @@ class HotelSelfController extends Controller
                 'address' => 'required|string|max:255',
                 'city' => 'required|string|max:255',
                 // 'image' => 'required|string|max:255',
-                'hotel_self_images' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                'hotel_self_images' => 'image|mimes:jpeg,png,jpg|max:2048',
                 'low_price' => 'required|integer|max:255',
-                'website' => 'required|string|max:255',
+                'website' => 'string|max:255',
             ]);
 
             if ($validator->fails()) {

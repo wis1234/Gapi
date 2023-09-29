@@ -11,13 +11,14 @@ class CreateHotelSelfTable extends Migration
         Schema::create('hotel_self', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('low_price')->nullable();
             $table->string('address');
             $table->string('city');
             $table->string('manager_firstname');
             $table->string('manager_lastname');
             $table->string('manager_phone');
             $table->string('manager_email');
-            $table->string('hotel_self_images');
+            $table->string('hotel_self_images')->nullable();
             $table->string('hotel_code')->unique();
             $table->string('website')->nullable();
             $table->unsignedBigInteger('hotel_id')->nullable(); // Make it nullable
