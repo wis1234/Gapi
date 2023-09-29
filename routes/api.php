@@ -42,6 +42,8 @@ use App\Http\Controllers\BookTicketController;
 use App\Http\Controllers\CateringTotalController;
 use App\Http\Controllers\FilteredCateringServiceController;
 
+use App\Http\Controllers\PointToPointController;
+
 
 
 /*
@@ -335,6 +337,8 @@ Route::put('answers/{answer}/update-sum', [AnswerController::class, 'updateSum']
 // Routes for AffordableCateringServiceController
 Route::get('/affordable-catering-services/{id}', [AffordableCateringServiceController::class, 'show']);
 
+//routing for point to point in afl project
 
+Route::resource('point-to-point', PointToPointController::class);
 
 
