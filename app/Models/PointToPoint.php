@@ -18,5 +18,6 @@ class PointToPoint extends Model
         'receiver_address',
         'receiver_phone',
         'description',
+        'courier'
     ];
 }

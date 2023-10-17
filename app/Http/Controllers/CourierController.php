@@ -6,79 +6,132 @@ use Illuminate\Http\Request;
 use App\Models\Courier;
 use App\Models\User;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Validator;
 
 class CourierController extends Controller
 {
     public function index()
     {
-        $couriers = Courier::all();
-        return response()->json(['couriers' => $couriers], Response::HTTP_OK);
+        try {
+            $couriers = Courier::whereHas('user', function ($query) {
+                $query->whereNotNull('created_at');
+            })->get();
+
+            $couriers->each(function ($courier) {
+                $courier->user->makeVisible(['firstname', 'lastname', 'phone', 'email']);
+                $courier->user_data = $courier->user; // Include user data in the courier object
+                unset($courier->user); // Remove the 'user' attribute
+            });
+
+            return response()->json(['data' => $couriers], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
     }
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'secret_key' => 'required|string',
-            'role' => 'required|string|max:50',
-            'photo' => 'required|string|max:50',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'secret_key' => 'required|string',
+                'role' => 'nullable|string|max:50',
+                'tm_type' => 'nullable|string',
+                'description' => 'nullable|string',
+            ]);
 
-        $user = User::where('secret_key', $validatedData['secret_key'])->first();
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], Response::HTTP_BAD_REQUEST);
+            }
 
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+            $user = User::where('secret_key', $request->input('secret_key'))->first();
+
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+            }
+
+            $courierData = $request->only(['role', 'tm_type', 'description']);
+            $courierData['user_id'] = $user->id;
+
+            $courier = Courier::create($courierData);
+
+            $courier->user_data = $user; // Include user data in the courier object
+            unset($courier->user); // Remove the 'user' attribute
+
+            return response()->json(['data' => $courier], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
         }
-
-        $courierData = [
-            'user_id' => $user->id,
-            'role' => $validatedData['role'],
-            'photo' => $validatedData['photo'],
-        ];
-
-        $courier = Courier::create($courierData);
-
-        return response()->json(['message' => 'Courier created successfully', 'courier' => $courier], Response::HTTP_CREATED);
     }
 
     public function show($id)
     {
-        $courier = Courier::find($id);
+        try {
+            $courier = Courier::with('user')->findOrFail($id);
 
-        if (!$courier) {
-            return response()->json(['message' => 'Courier not found'], Response::HTTP_NOT_FOUND);
+            if ($courier->user && $courier->user->created_at) {
+                $courier->user->makeVisible(['firstname', 'lastname', 'phone', 'email']);
+                $courier->user_data = $courier->user; // Include user data in the courier object
+                unset($courier->user); // Remove the 'user' attribute
+
+                return response()->json(['data' => $courier], Response::HTTP_OK);
+            } else {
+                return response()->json(['error' => 'Courier not found or associated user not created'], Response::HTTP_NOT_FOUND);
+            }
+        } catch (\Exception $e) {
+            return $this->handleException($e);
         }
-
-        return response()->json(['courier' => $courier], Response::HTTP_OK);
     }
 
     public function update(Request $request, $id)
     {
-        $courier = Courier::find($id);
+        try {
+            $validator = Validator::make($request->all(), [
+                'role' => 'required|string|max:50',
+                'tm_type' => 'nullable|string',
+                'description' => 'nullable|string',
+            ]);
 
-        if (!$courier) {
-            return response()->json(['message' => 'Courier not found'], Response::HTTP_NOT_FOUND);
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], Response::HTTP_BAD_REQUEST);
+            }
+
+            $courier = Courier::findOrFail($id);
+
+            $courierData = $request->only(['role', 'tm_type', 'description']);
+            $courier->update($courierData);
+
+            $courier->user_data = $courier->user; // Include user data in the courier object
+            unset($courier->user); // Remove the 'user' attribute
+
+            return response()->json(['data' => $courier], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
         }
-
-        $validatedData = $request->validate([
-            'role' => 'required|string|max:50',
-            'photo' => 'required|string|max:50',
-        ]);
-
-        $courier->update($validatedData);
-
-        return response()->json(['message' => 'Courier updated successfully'], Response::HTTP_OK);
     }
 
     public function destroy($id)
     {
-        $courier = Courier::find($id);
+        try {
+            $courier = Courier::findOrFail($id);
 
-        if (!$courier) {
-            return response()->json(['message' => 'Courier not found'], Response::HTTP_NOT_FOUND);
+            $courier->delete();
+
+            $courier->user_data = $courier->user; // Include user data in the courier object
+            unset($courier->user); // Remove the 'user' attribute
+
+            // return response()->json(['data' => $courier], Response::HTTP_OK);
+            $success_message = 'Courier deleted successfully';
+            return response()->json(['data' => $success_message ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            return $this->handleException($e);
         }
+    }
 
-        $courier->delete();
+    protected function handleException(\Exception $exception)
+    {
+        // Log the exception here if needed
 
-        return response()->json(['message' => 'Courier deleted successfully'], Response::HTTP_OK);
+        return response()->json(['error' => 'Something went wrong'], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }

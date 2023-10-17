@@ -9,7 +9,7 @@ class Restaurant extends Model
     protected $table = 'restaurants';
 
     protected $fillable = ['name', 'address', 'city', 'image','website', 'manager_firstname', 'manager_lastname',
-    'manager_phone', 'manager_email', 'restaurant_code', 'user_id'];
+    'manager_phone', 'manager_email', 'restaurant_code', 'description', 'open_time', 'close_time' ,'user_id'];
 
     // Define the relationship between Restaurant and User models
     public function user()

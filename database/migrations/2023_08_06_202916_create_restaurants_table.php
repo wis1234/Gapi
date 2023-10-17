@@ -20,6 +20,8 @@ class CreateRestaurantsTable extends Migration
             $table->string('manager_phone');
             $table->string('manager_email');
             $table->string('restaurant_code')->nullable();
+            $table->string('open_time')->nullable();
+            $table->string('close_time')->nullable();
             $table->unsignedBigInteger('user_id');
             $table->timestamps();
 

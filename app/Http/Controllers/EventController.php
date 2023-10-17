@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Event;
 use App\Models\EventImage;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -16,7 +17,33 @@ class EventController extends Controller
     {
         try {
             $events = Event::all();
-            return response()->json(['data' => $events]);
+
+            $formattedEvents = $events->map(function ($event) {
+                $imagePaths = $event->images->pluck('image_path')->toArray();
+
+                return [
+                    'id' => $event->id,
+                    'name' => $event->name,
+                    'type' => $event->type,
+                    'description' => $event->description,
+                    'date' => $event->date,
+                    'time' => $event->time,
+                    'place' => $event->place,
+                    'creator_firstname' => $event->creator_firstname,
+                    'creator_lastname' => $event->creator_lastname,
+                    'appreciation' => $event->appreciation,
+                    'total_seat' => $event->total_seat,
+                    'remain_seat' => $event->remain_seat,
+                    'created_at' => $event->created_at,
+                    'updated_at' => $event->updated_at,
+                    'image_paths' => $imagePaths,
+                    'event_code' => $event->event_code,
+                    'latitude' => $event->latitude,
+                    'longitude' => $event->longitude,
+                ];
+            });
+
+            return response()->json(['data' => $formattedEvents], Response::HTTP_OK);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
@@ -26,27 +53,25 @@ class EventController extends Controller
     {
         try {
             $request->validate([
-                'name' => 'required|string|unique:events|max:255', // Updated 'unique' rule
-
+                'name' => 'required|string|unique:events|max:255',
                 'type' => 'required|string|max:100',
                 'description' => 'required|string',
                 'date' => 'required|date',
                 'time' => 'required|date_format:H:i',
                 'place' => 'required|string|max:255',
                 'appreciation' => 'nullable|numeric',
-                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Multiple image validation
+                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'total_seat' => 'required|numeric',
                 'remain_seat' => 'required|numeric',
                 'secret_key' => 'required|string',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
             ]);
 
-            // Find the user based on the secret key
             $user = User::where('secret_key', $request->secret_key)->firstOrFail();
 
-            // Generate a unique event code
             $eventCode = $this->generateEventCode();
 
-            // Prepare event data to be inserted into the database
             $eventData = [
                 'name' => $request->name,
                 'type' => $request->type,
@@ -61,15 +86,14 @@ class EventController extends Controller
                 'remain_seat' => $request->remain_seat,
                 'creator_id' => $user->id,
                 'event_code' => $eventCode,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
             ];
 
-            // Start a database transaction
             DB::beginTransaction();
 
-            // Create the event record in the database
             $event = Event::create($eventData);
 
-            // Store event images
             if ($request->hasFile('images')) {
                 $images = $request->file('images');
                 foreach ($images as $image) {
@@ -83,21 +107,16 @@ class EventController extends Controller
                 }
             }
 
-            // Commit the transaction
             DB::commit();
 
-            // Return the event details including the generated event code
             return response()->json(['data' => $event, 'event_code' => $eventCode], 201);
         } catch (ValidationException $e) {
-            // Rollback the transaction on validation error
             DB::rollback();
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
         } catch (ModelNotFoundException $e) {
-            // Rollback the transaction on user not found
             DB::rollback();
             return response()->json(['message' => 'User not found'], 404);
         } catch (\Exception $e) {
-            // Rollback the transaction on any other exception
             DB::rollback();
             return $this->handleException($e);
         }
@@ -107,7 +126,30 @@ class EventController extends Controller
     {
         try {
             $event = Event::findOrFail($id);
-            return response()->json(['data' => $event]);
+            $imagePaths = $event->images->pluck('image_path')->toArray();
+
+            $formattedEvent = [
+                'id' => $event->id,
+                'name' => $event->name,
+                'type' => $event->type,
+                'description' => $event->description,
+                'date' => $event->date,
+                'time' => $event->time,
+                'place' => $event->place,
+                'creator_firstname' => $event->creator_firstname,
+                'creator_lastname' => $event->creator_lastname,
+                'appreciation' => $event->appreciation,
+                'total_seat' => $event->total_seat,
+                'remain_seat' => $event->remain_seat,
+                'created_at' => $event->created_at,
+                'updated_at' => $event->updated_at,
+                'image_paths' => $imagePaths,
+                'event_code' => $event->event_code,
+                'latitude' => $event->latitude,
+                'longitude' => $event->longitude,
+            ];
+
+            return response()->json(['data' => $formattedEvent]);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Event not found'], 404);
         } catch (\Exception $e) {
@@ -119,27 +161,28 @@ class EventController extends Controller
     {
         try {
             $request->validate([
-                'name' => ['required', 'string', 'unique:events', 'max:255'], // Updated 'unique' rule
-
+                'name' => 'required|string|unique:events,name,' . $id . '|max:255',
                 'type' => 'required|string|max:100',
                 'description' => 'required|string',
                 'date' => 'required|date',
                 'time' => 'required|date_format:H:i',
                 'place' => 'required|string|max:255',
-                'appreciation' => 'numeric',
-                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Multiple image validation
+                'appreciation' => 'nullable|numeric',
+                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'total_seat' => 'required|numeric',
                 'remain_seat' => 'required|numeric',
                 'secret_key' => 'required|string',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
             ]);
 
             $event = Event::findOrFail($id);
             $event->update($request->only([
                 'name', 'type', 'description', 'date', 'time',
-                'place', 'appreciation', 'total_seat', 'remain_seat'
+                'place', 'appreciation', 'total_seat', 'remain_seat',
+                'latitude', 'longitude',
             ]));
 
-            // Store event images
             if ($request->hasFile('images')) {
                 $images = $request->file('images');
                 foreach ($images as $image) {
@@ -184,8 +227,6 @@ class EventController extends Controller
 
     protected function handleException(\Exception $exception)
     {
-        // Log the exception here if needed
-
         return response()->json(['message' => 'An error occurred'], 500);
     }
 }

@@ -12,7 +12,7 @@ class HotelSelf extends Model
     protected $table = 'hotel_self';
 
     protected $fillable = [
-        'name', 'address', 'city', 'manager_firstname', 'manager_lastname', 'manager_phone', 'hotel_self_images', 'low_price',
+        'name', 'address', 'latitude', 'longitude', 'city', 'manager_firstname', 'manager_lastname', 'manager_phone', 'hotel_self_images', 'low_price',
         'manager_email', 'hotel_code','hotel_name', 'website', 'user_id'
     ];
 

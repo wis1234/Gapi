@@ -12,6 +12,7 @@ class EventImage extends Model
     protected $fillable = [
         'event_id', 'event_name', 'image_path',
     ];
+    protected $hidden = ['event_id', 'event_name'];
 
     // Define the relationship with Event model
     public function event()

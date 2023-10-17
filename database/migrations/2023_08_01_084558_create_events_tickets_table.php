@@ -19,8 +19,7 @@ class CreateEvEntsTicketsTable extends Migration
             $table->string('event_name');
             $table->string('creator_firstname');
             $table->string('creator_lastname');
-            // $table->foreignId('event_id')->constrained('events');
-            // $table->foreignId('buyer_id')->constrained('users');
+
             $table->date('expiration_date')->nullable();
             $table->string('ticket_n°');
             $table->timestamps();

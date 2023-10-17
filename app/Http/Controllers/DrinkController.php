@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use App\Models\Drink;
-use App\Models\DrinkImageNew;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
+use App\Models\DrinkImageNew;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -15,9 +16,31 @@ class DrinkController extends Controller
 {
     public function index()
     {
-        $drinks = Drink::all();
-        return response()->json($drinks);
+        try {
+            $drinks = Drink::all();
+    
+            $formattedDrinks = $drinks->map(function ($drink) {
+                $imagePaths = $drink->images->pluck('image_path')->toArray();
+    
+                return [
+                    'id' => $drink->id,
+                    'name' => $drink->name,
+                    'price' => $drink->price,
+                    'availability' => $drink->availability,
+                    'restaurant_id' => $drink->restaurant_id,
+                    'restaurant_name' => $drink->restaurant_name,
+                    'created_at' => $drink->created_at,
+                    'updated_at' => $drink->updated_at,
+                    'image_paths' => $imagePaths,
+                ];
+            });
+    
+            return response()->json($formattedDrinks, Response::HTTP_OK);
+        } catch (Exception $e) {
+            return $this->handleException($e);
+        }
     }
+    
 
     public function store(Request $request)
     {

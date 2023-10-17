@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Exception;
+use Exception; // Corrected namespace
 use App\Models\Menu;
 use App\Models\MenuImage;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse; // Corrected namespace
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-
 class MenuController extends Controller
 {
     public function index()
@@ -49,18 +49,7 @@ class MenuController extends Controller
 
             $menu = Menu::create($menuData);
 
-            if ($request->hasFile('images')) {
-                $images = [];
-                foreach ($request->file('images') as $image) {
-                    $imagePath = $image->store('menu_images'); // Store image and get the path
-                    $images[] = new MenuImage([
-                        'restaurant_id' => $restaurant->id,
-                        'restaurant_name' => $restaurant->name,
-                        'image_path' => $imagePath,
-                    ]);
-                }
-                $menu->menuImages()->saveMany($images);
-            }
+            $this->storeImages($menu, $request->file('images'));
 
             return response()->json(['message' => 'Menu created successfully', 'data' => $menu]);
         } catch (Exception $e) {
@@ -104,19 +93,7 @@ class MenuController extends Controller
             $menu->restaurant_name = $restaurant->name;
             $menu->save();
 
-            if ($request->hasFile('images')) {
-                $images = [];
-                foreach ($request->file('images') as $image) {
-                    $imagePath = $image->store('menu_images'); // Store image and get the path
-                    $images[] = new MenuImage([
-                        'restaurant_id' => $restaurant->id,
-                        'restaurant_name' => $restaurant->name,
-                        'image_path' => $imagePath,
-                    ]);
-                }
-                $menu->menuImages()->delete();
-                $menu->menuImages()->saveMany($images);
-            }
+            $this->storeImages($menu, $request->file('images'));
 
             return response()->json(['message' => 'Menu updated successfully', 'data' => $menu]);
         } catch (ModelNotFoundException $e) {
@@ -150,5 +127,19 @@ class MenuController extends Controller
             return response()->json(['message' => 'Error deleting menu', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
+
+    protected function storeImages(Menu $menu, $images)
+    {
+        if ($images) {
+            foreach ($images as $image) {
+                $imagePath = $image->store('menu_images', 'public');
+
+                $menu->menuImages()->create([
+                    'restaurant_id' => $menu->restaurant_id,
+                    'restaurant_name' => $menu->restaurant_name,
+                    'image_path' => $imagePath,
+                ]);
+            }
+        }
+    }
 }

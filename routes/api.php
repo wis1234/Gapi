@@ -13,6 +13,7 @@ use App\Http\Controllers\ChallengeParticipantController;
 use App\Http\Controllers\EventTicketController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\HotelTicketController;
+use App\Http\Controllers\EventImageController;
 use App\Http\Controllers\HotelImageController;
 use App\Http\Controllers\HotelSelfController;
 use App\Http\Controllers\AuthController;
@@ -43,7 +44,7 @@ use App\Http\Controllers\CateringTotalController;
 use App\Http\Controllers\FilteredCateringServiceController;
 
 use App\Http\Controllers\PointToPointController;
-
+use App\Http\Controllers\HotelRoomLikeController;
 
 
 /*
@@ -78,10 +79,23 @@ Route::post('/verify-code', [SMSAuthController::class, 'verifyCode']);
 Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
 
 
+
+
+
 Route::group(['middleware' => 'auth:api'], function () {
     // Your protected API routes go here
+
+    // like and dislike routing hotel room
+
+Route::post('hotel-room-like/like/{hotelRoomId}', [HotelRoomLikeController::class, 'like']);
+Route::post('hotel-room-like/dislike/{hotelRoomId}', [HotelRoomLikeController::class, 'dislike']);
+
+
  
 });
+
+
+
 //apartments controller
 Route::get('/apartments', [ApartmentController::class, 'index']);
 Route::get('/apartments/{id}', [ApartmentController::class, 'show']);
@@ -186,6 +200,22 @@ Route::get('hotel-images/{id}', [HotelImageController::class, 'show']);
 Route::put('hotel-images/{id}', [HotelImageController::class, 'update']);
 Route::delete('hotel-images/{id}', [HotelImageController::class, 'destroy']);
 
+//events images routing
+
+// Route to get all event images
+Route::get('/event-images', [EventImageController::class, 'index']);
+
+// Route to upload images for an event
+Route::post('/events/{eventCode}/images', [EventImageController::class, 'store']);
+
+// Route to get images for a specific event
+Route::get('/events/{eventCode}/images', [EventImageController::class, 'show']);
+
+// Route to update images for a specific event
+Route::put('/events/{eventCode}/images', [EventImageController::class, 'update']);
+
+// Route to delete images for a specific event
+Route::delete('/events/{eventCode}/images', [EventImageController::class, 'destroy']);
 
 //hotel self routing
 
@@ -340,5 +370,6 @@ Route::get('/affordable-catering-services/{id}', [AffordableCateringServiceContr
 //routing for point to point in afl project
 
 Route::resource('point-to-point', PointToPointController::class);
+
 
 

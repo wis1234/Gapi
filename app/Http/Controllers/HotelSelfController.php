@@ -14,9 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB; // Import DB
 
 class HotelSelfController extends Controller
-
 {
-
     public function index()
     {
         try {
@@ -33,8 +31,6 @@ class HotelSelfController extends Controller
             return $this->handleException($e);
         }
     }
-    
-
 
     public function store(Request $request)
     {
@@ -44,26 +40,28 @@ class HotelSelfController extends Controller
             'address' => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'website' => 'string|max:255',
+            'latitude' => 'nullable|numeric', // Add latitude to validation rules
+            'longitude' => 'nullable|numeric', // Add longitude to validation rules
             'hotel_self_images' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], Response::HTTP_BAD_REQUEST);
         }
-    
+
         $user = User::where('secret_key', $request->input('secret_key'))->first();
-    
+
         // Generate the hotel_code
         $hotelCode = 'HOTEL_' . uniqid() . '_AFRILINK';
-    
+
         // Handle image upload
-        $imagePath = "uploads/hotels/1695147237_bg-01.jpg"; // initialize the default image path 
+        $imagePath = "uploads/hotels/1695147237_bg-01.jpg"; // initialize the default image path
         if ($request->hasFile('hotel_self_images')) {
             $image = $request->file('hotel_self_images');
             $imageName = time() . '_' . $image->getClientOriginalName();
             $imagePath = $image->storeAs('uploads/hotels', $imageName, 'public');
         }
-    
+
         // Create the hotel_self record with data from the request
         $hotelData = $request->except(['secret_key', 'manager_firstname', 'manager_lastname', 'manager_phone', 'manager_email', 'hotel_self_images']);
         $hotelData['manager_firstname'] = $user->firstname;
@@ -73,93 +71,43 @@ class HotelSelfController extends Controller
         $hotelData['user_id'] = $user->id;
         $hotelData['hotel_code'] = $hotelCode; // Assign the generated hotel_code
         $hotelData['hotel_self_images'] = $imagePath; // Assign the image path to the database field
-    
-        // Create the hotel_self record
+
+        // Create the hotel_self record with latitude and longitude
+        $hotelData['latitude'] = $request->input('latitude');
+        $hotelData['longitude'] = $request->input('longitude');
+
         $hotel = HotelSelf::create($hotelData);
-    
+
         // Calculate the lowest room price from the hotels table for this hotel
         $lowestPrice = Hotel::where('hotel_name', $hotel->name)->min('room_price');
-    
+
         // Update the low_price field in the hotel_self record
         $hotel->low_price = $lowestPrice;
         $hotel->save();
-    
+
         // Create a response array with hotel data and lowest room price
         $response = [
             'hotel' => $hotel,
             'lowest_room_price' => $lowestPrice,
         ];
-    
+
         return response()->json($response, Response::HTTP_CREATED);
     }
-    
-    
-    
-    
 
-//     public function store(Request $request)
-// {
-//     try {
-//         $validator = Validator::make($request->all(), [
-//             'secret_key' => 'required|string|exists:users,secret_key',
-//             'name' => 'required|string|max:255',
-//             'address' => 'required|string|max:255',
-//             'city' => 'required|string|max:255',
-//             'low_price' => 'required|integer|max:255',
-//             'website' => 'required|string|max:255',
-//             'hotel_self_images' => 'required|image|mimes:jpeg,png,jpg|max:2048', // Adjust the image validation rules as needed
-//         ]);
+    public function show($id)
+    {
+        try {
+            $hotel = HotelSelf::findOrFail($id);
 
-//         if ($validator->fails()) {
-//             throw new ValidationException($validator);
-//         }
+            // Calculate the lowest room price from the hotels table
+            $lowestPrice = Hotel::where('hotel_name', $hotel->name)->min('room_price');
+            $hotel->low_price = $lowestPrice;
 
-//         $user = User::where('secret_key', $request->input('secret_key'))->first();
-
-//         $hotelCode = 'HOTEL_' . uniqid() . '_AFRILINK';
-
-//         // Handle image upload
-//         $imagePath = null;
-//         if ($request->hasFile('hotel_self_images')) {
-//             $image = $request->file('hotel_self_images');
-//             $imageName = time() . '_' . $image->getClientOriginalName();
-//             $imagePath = $image->storeAs('uploads/hotels', $imageName, 'public');
-//         }
-
-//         $hotelData = $request->except(['secret_key', 'manager_firstname', 'manager_lastname', 'manager_phone', 'manager_email', 'hotel_self_images']);
-//         $hotelData['manager_firstname'] = $user->firstname;
-//         $hotelData['manager_lastname'] = $user->lastname;
-//         $hotelData['manager_phone'] = $user->phone;
-//         $hotelData['manager_email'] = $user->email;
-//         $hotelData['user_id'] = $user->id;
-//         $hotelData['hotel_code'] = $hotelCode;
-//         $hotelData['hotel_self_images'] = $imagePath; // Assign the image path to the database field
-
-//         $hotel = HotelSelf::create($hotelData);
-//         return response()->json($hotel, Response::HTTP_CREATED);
-//     } catch (ValidationException $e) {
-//         return response()->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-//     } catch (\Exception $e) {
-//         return $this->handleException($e);
-//     }
-// }
-
-
-
-public function show($id)
-{
-    try {
-        $hotel = HotelSelf::findOrFail($id);
-
-        // Calculate the lowest room price from the hotels table
-        $lowestPrice = Hotel::where('hotel_name', $hotel->name)->min('room_price');
-        $hotel->low_price = $lowestPrice;
-
-        return response()->json($hotel);
-    } catch (\Exception $e) {
-        return $this->handleException($e);
+            return response()->json($hotel);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
     }
-}
 
     public function update(Request $request, $id)
     {
@@ -173,6 +121,8 @@ public function show($id)
                 'hotel_self_images' => 'image|mimes:jpeg,png,jpg|max:2048',
                 'low_price' => 'required|integer|max:255',
                 'website' => 'string|max:255',
+                'latitude' => 'nullable|numeric', // Add latitude to validation rules
+                'longitude' => 'nullable|numeric', // Add longitude to validation rules
             ]);
 
             if ($validator->fails()) {
@@ -182,13 +132,22 @@ public function show($id)
             $user = User::where('secret_key', $request->input('secret_key'))->first();
 
             $hotel = HotelSelf::findOrFail($id);
-            $hotel->update($request->except(['secret_key', 'manager_firstname', 'manager_lastname', 'manager_phone', 'manager_email']) + [
+
+            // Update the hotel_self record with data from the request
+            $hotel->update($request->except(['secret_key', 'manager_firstname', 'manager_lastname', 'manager_phone', 'manager_email', 'latitude', 'longitude']) + [
                 'manager_firstname' => $user->firstname,
                 'manager_lastname' => $user->lastname,
                 'manager_phone' => $user->phone,
                 'manager_email' => $user->email,
                 'user_id' => $user->id,
             ]);
+
+            // Update the latitude and longitude
+            $hotel->latitude = $request->input('latitude');
+            $hotel->longitude = $request->input('longitude');
+
+            // Update the hotel
+            $hotel->save();
 
             return response()->json($hotel);
         } catch (\Exception $e) {

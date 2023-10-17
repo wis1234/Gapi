@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CateringService;
+use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use App\Models\CateringService;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\EloquentModelNotFoundException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Models\User;
 
 class CateringServiceController extends Controller
 {
@@ -32,7 +35,7 @@ class CateringServiceController extends Controller
                 'num_boy' => 'required|integer',
                 'address' => 'required|string|max:255',
                 'ifu' => 'required|string|max:255',
-                'image' => 'nullable|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'secret_key' => 'required|string|exists:users,secret_key',
             ]);
 
@@ -46,13 +49,18 @@ class CateringServiceController extends Controller
                 return response()->json(['error' => 'User not found.'], Response::HTTP_NOT_FOUND);
             }
 
-            $cateringServiceData = $request->except('secret_key');
-            $cateringServiceData['catering_service_code'] = 'CATER_' . uniqid() .'_AFRILINK';
+            $cateringServiceData = $request->except(['secret_key', 'image']);
+            $cateringServiceData['catering_service_code'] = 'CATER_' . uniqid() . '_AFRILINK';
             $cateringServiceData['user_id'] = $user->id;
             $cateringServiceData['manager_firstname'] = $user->firstname;
             $cateringServiceData['manager_lastname'] = $user->lastname;
             $cateringServiceData['manager_phone'] = $user->phone;
             $cateringServiceData['manager_email'] = $user->email;
+
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('catering_images', 'public');
+                $cateringServiceData['image'] = $imagePath;
+            }
 
             $cateringService = CateringService::create($cateringServiceData);
 
@@ -84,7 +92,7 @@ class CateringServiceController extends Controller
                 'num_boy' => 'required|integer',
                 'address' => 'required|string|max:255',
                 'ifu' => 'required|string|max:255',
-                'image' => 'nullable|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'secret_key' => 'required|string|exists:users,secret_key',
             ]);
 
@@ -99,7 +107,18 @@ class CateringServiceController extends Controller
             }
 
             $cateringService = CateringService::findOrFail($id);
-            $cateringServiceData = $request->except(['secret_key', 'catering_service_code', 'user_id', 'manager_firstname', 'manager_lastname', 'manager_phone', 'manager_email']);
+            $cateringServiceData = $request->except(['secret_key', 'catering_service_code', 'user_id', 'manager_firstname', 'manager_lastname', 'manager_phone', 'manager_email', 'image']);
+
+            if ($request->hasFile('image')) {
+                // Delete the old image, if it exists
+                if ($cateringService->image) {
+                    Storage::disk('public')->delete($cateringService->image);
+                }
+
+                $imagePath = $request->file('image')->store('catering_images', 'public');
+                $cateringServiceData['image'] = $imagePath;
+            }
+
             $cateringServiceData['user_id'] = $user->id;
             $cateringServiceData['manager_firstname'] = $user->firstname;
             $cateringServiceData['manager_lastname'] = $user->lastname;
@@ -120,6 +139,10 @@ class CateringServiceController extends Controller
     {
         try {
             $cateringService = CateringService::findOrFail($id);
+            // Delete the associated image, if it exists
+            if ($cateringService->image) {
+                Storage::disk('public')->delete($cateringService->image);
+            }
             $cateringService->delete();
 
             return response()->json(['message' => 'Catering service deleted successfully']);

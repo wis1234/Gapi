@@ -2,80 +2,118 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\EventImage;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\Response;
 
 class EventImageController extends Controller
 {
-    public function index($eventId)
+    public function index()
     {
-        try {
-            $event = Event::findOrFail($eventId);
-            $images = $event->images;
-            return response()->json(['data' => $images]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Event not found'], 404);
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+        $images = EventImage::all();
+    
+        $formattedImages = $images->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'event_id' => $image->event_id,
+                'event_name' => $image->event_name,
+                'image_path' => $image->image_path,
+            ];
+        });
+    
+        return response()->json(['data' => $formattedImages], Response::HTTP_OK);
     }
+    
 
-    public function store(Request $request, $eventId)
+    public function store(Request $request)
     {
-        try {
-            $request->validate([
-                'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Multiple image validation
-            ]);
+        $validator = Validator::make($request->all(), [
+            'event_code' => 'required|string',
+            'images' => 'required|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
-            $event = Event::findOrFail($eventId);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], Response::HTTP_BAD_REQUEST);
+        }
 
-            foreach ($request->file('images') as $image) {
-                $imagePath = 'event_images/' . uniqid() . '.' . $image->getClientOriginalExtension();
-                $image->storeAs('public', $imagePath);
-                EventImage::create([
-                    'event_id' => $event->id,
-                    'event_name' => $event->name,
-                    'image_path' => $imagePath,
-                ]);
+        $event = Event::where('event_code', $request->input('event_code'))->first();
+
+        if (!$event) {
+            return response()->json(['error' => 'Event code not found.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $uploadedImages = [];
+
+        foreach ($request->file('images') as $image) {
+            if ($image->isValid()) {
+                $imagePath = $image->store('event_images', 'http://127.0.0.1:8000/storage/event_images');
+                $uploadedImages[] = $imagePath;
             }
-
-            return response()->json(['message' => 'Images uploaded successfully'], 201);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Event not found'], 404);
-        } catch (\Exception $e) {
-            return $this->handleException($e);
         }
+
+        foreach ($uploadedImages as $imagePath) {
+            EventImage::create([
+                'event_id' => $event->id,
+                'image_path' => $imagePath,
+            ]);
+        }
+
+        return response()->json(['message' => 'Event images uploaded successfully.'], Response::HTTP_CREATED);
     }
 
-    public function destroy($eventId, $imageId)
+    public function show($id)
     {
-        try {
-            $event = Event::findOrFail($eventId);
-            $image = EventImage::findOrFail($imageId);
-
-            // Delete the image file from storage
-            Storage::delete('public/' . $image->image_path);
-
-            $image->delete();
-
-            return response()->json(['message' => 'Image deleted successfully']);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Event or image not found'], 404);
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+        $event = Event::findOrFail($id);
+        $images = $event->images;
+        return response()->json(['data' => $images], Response::HTTP_OK);
     }
 
-    protected function handleException(\Exception $exception)
+    public function update(Request $request, $id)
     {
-        // Log the exception here if needed
+        $validator = Validator::make($request->all(), [
+            'event_code' => 'required|string',
+            'images' => 'required|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
-        return response()->json(['message' => 'An error occurred'], 500);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], Response::HTTP_BAD_REQUEST);
+        }
+
+        $event = Event::where('event_code', $request->input('event_code'))->first();
+
+        if (!$event) {
+            return response()->json(['error' => 'Event code not found.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $event->images()->delete(); // Delete existing images
+
+        $uploadedImages = [];
+
+        foreach ($request->file('images') as $image) {
+            if ($image->isValid()) {
+                $imagePath = $image->store('event_images', 'public');
+                $uploadedImages[] = $imagePath;
+            }
+        }
+
+        foreach ($uploadedImages as $imagePath) {
+            EventImage::create([
+                'event_id' => $event->id,
+                'image_path' => $imagePath,
+            ]);
+        }
+
+        return response()->json(['message' => 'Event images updated successfully.'], Response::HTTP_OK);
+    }
+
+    public function destroy($id)
+    {
+        $event = Event::findOrFail($id);
+        $event->images()->delete(); // Delete associated images
+        return response()->json(['message' => 'Event and its images deleted successfully.'], Response::HTTP_OK);
     }
 }

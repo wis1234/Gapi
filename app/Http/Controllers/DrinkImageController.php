@@ -16,11 +16,19 @@ class DrinkImageController extends Controller
     {
         try {
             $drinkImages = DrinkImage::all();
-            return response()->json(['data' => $drinkImages], Response::HTTP_OK);
+    
+            $formattedDrinkImages = $drinkImages->map(function ($drinkImage) {
+                return [
+                    'image_path' => $drinkImage->image_path,
+                ];
+            });
+    
+            return response()->json($formattedDrinkImages, Response::HTTP_OK);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
     }
+    
 
     public function show($id)
     {

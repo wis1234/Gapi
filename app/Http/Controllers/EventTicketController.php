@@ -6,41 +6,38 @@ use App\Models\User;
 use App\Models\Event;
 use App\Models\EventTicket;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
-use PHPUnit\Framework\Attributes\Ticket;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class EventTicketController extends Controller
 {
-
-    // ...
-    
     public function store(Request $request)
     {
         $request->validate([
             'event_code' => ['required', 'exists:events,event_code'],
             'secret_key' => ['required', 'exists:users,secret_key'],
-            'name' => ['required', 'string', 'unique:events_tickets', 'max:255'], // Updated 'unique' rule
+            'name' => ['required', 'string', Rule::unique('events_tickets')->where(function ($query) use ($request) {
+                return $query->where('event_code', $request->event_code);
+            }), 'max:255'],
             'type' => ['required', 'string', 'max:255'],
             'price' => ['integer', 'min:0'],
             'total' => ['integer', 'min:1'],
         ]);
-    
+
         $eventCode = $request->input('event_code');
         $secretKey = $request->input('secret_key');
-    
+
         $event = Event::where('event_code', $eventCode)->first();
         $user = User::where('secret_key', $secretKey)->first();
-    
+
         if (!$event) {
             return response()->json(['message' => 'Event not found.'], 404);
         }
-    
+
         if (!$user) {
             return response()->json(['message' => 'User not found.'], 404);
         }
-    
+
         $ticket = new EventTicket();
         $ticket->name = $request->input('name');
         $ticket->type = $request->input('type');
@@ -51,14 +48,13 @@ class EventTicketController extends Controller
         $ticket->event_name = $event->name;
         $ticket->creator_firstname = $user->firstname;
         $ticket->creator_lastname = $user->lastname;
-    
-        $ticket->set_date = $request->input('set_date'); // 
-        $ticket->ticket_n° = 'TICKET_' . uniqid() . '_AFRILINK'; // Corrected field name
+
+        $ticket->set_date = $request->input('set_date');
+        $ticket->ticket_n° = 'TICKET_' . uniqid() . '_AFRILINK';
         $ticket->save();
-    
+
         return response()->json(['message' => 'Ticket created successfully.', 'ticket' => $ticket]);
     }
-    
 
     public function index()
     {
@@ -91,7 +87,6 @@ class EventTicketController extends Controller
             $ticket->type = $request->input('type');
             $ticket->price = $request->input('price');
             $ticket->total = $request->input('total');
-            // ... Update other fields as needed ...
             $ticket->save();
 
             return response()->json(['message' => 'Ticket updated successfully.']);

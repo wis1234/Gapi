@@ -14,8 +14,13 @@ return new class extends Migration
         Schema::create('courier', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table-> string('courier_firstname');
+            $table-> string('courier_lastname');
+            $table-> string('courier_phone');
+            $table-> string('courier_phone');
+            $table-> string('courier_photo');
             $table-> string('role');
-            $table-> string('photo');
+            $table-> string('photo')->nullable;
             $table->timestamps();
         });
     }

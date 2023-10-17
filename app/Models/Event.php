@@ -11,9 +11,11 @@ class Event extends Model
     protected $table = 'events'; // Specify the table name
 
     protected $fillable = [
-        'name', 'type', 'description', 'date', 'time', 'place',
+        'name', 'type', 'description', 'latitude', 'longitude', 'date', 'time', 'place',
         'creator_firstname', 'creator_lastname', 'appreciation', 'image', 'total_seat', 'remain_seat', 'creator_id', 'event_code'
     ];
+    protected $hidden  = ['image'];
+
 
     public function creator(): BelongsTo
     {

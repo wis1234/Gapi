@@ -14,7 +14,8 @@ class Hotel extends Authenticatable implements JWTSubject
 
     protected $fillable = [
         'hotel_name', 'hotel_address',  'state', 'image_path', 'num_roomavail',
-        'room_type', 'room_price', 'description', 'user_id'
+        'room_type', 'room_price', 'description', 'user_id', 'hotel_id', 'comment',
+        'latitude', 'longitude'
     ];
 
     // Define the relationship with the User model (belongs to a User)
@@ -44,6 +45,11 @@ class Hotel extends Authenticatable implements JWTSubject
     public function hotelSelves()
     {
         return $this->hasMany(HotelSelf::class);
+    }
+
+    public function hotelSelf()
+    {
+        return $this->hasOne(HotelSelf::class);
     }
 }
 
